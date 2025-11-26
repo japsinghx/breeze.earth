@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About Us - Breeze</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="src/style.css">
+</head>
+
+<body class="dark-mode">
+    <div id="app">
+        <!-- Navigation Header -->
+        <nav class="app-nav">
+            <div class="nav-container">
+                <a href="index.html" class="nav-logo">
+                    <svg class="logo-svg" width="32" height="32" viewBox="0 0 32 32" fill="none">
+                        <path class="wind-line wind-1" d="M4 10 Q 12 10, 16 8 T 28 10" stroke="currentColor"
+                            stroke-width="2.5" stroke-linecap="round" />
+                        <path class="wind-line wind-2" d="M6 16 Q 14 16, 18 14 T 26 16" stroke="currentColor"
+                            stroke-width="2.5" stroke-linecap="round" />
+                        <path class="wind-line wind-3" d="M4 22 Q 12 22, 16 20 T 28 22" stroke="currentColor"
+                            stroke-width="2.5" stroke-linecap="round" />
+                    </svg>
+                    <span class="logo-text">Breeze</span>
+                </a>
+                <div class="nav-links">
+                    <a href="about.html" class="active">About</a>
+                    <a href="contact.html">Contact</a>
+                    <label class="toggle-switch nav-toggle">
+                        <input type="checkbox" id="dark-mode-toggle">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+        </nav>
+
+        <div class="page-container">
+            <header class="page-header">
+                <a href="index.html" class="back-link">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="m15 18-6-6 6-6" />
+                    </svg>
+                    Back to Home
+                </a>
+                <h1>About Breeze</h1>
+            </header>
+
+            <main class="page-content">
+                <section class="content-section">
+                    <h2>Our Mission</h2>
+                    <p>Breeze is dedicated to providing real-time, accurate air quality information to people around the
+                        world. We believe everyone deserves to breathe clean air and make informed decisions about their
+                        outdoor activities.</p>
+                </section>
+
+                <section class="content-section">
+                    <h2>What We Do</h2>
+                    <p>We aggregate air quality data from reliable sources and present it in a clean, easy-to-understand
+                        interface. Our platform monitors Air Quality Index (AQI) levels and provides actionable health
+                        recommendations based on current conditions.</p>
+
+                    <h3>Key Features</h3>
+                    <ul>
+                        <li><strong>Real-Time Data:</strong> Up-to-date AQI measurements from major cities worldwide
+                        </li>
+                        <li><strong>Comprehensive Metrics:</strong> Track PM2.5, PM10, NO₂, SO₂, Ozone, and CO levels
+                        </li>
+                        <li><strong>Health Recommendations:</strong> Personalized advice based on air quality conditions
+                        </li>
+                        <li><strong>Global Coverage:</strong> Monitor air quality in cities across the globe</li>
+                        <li><strong>Clean Design:</strong> Simple, modern interface inspired by iOS and Google design
+                            principles</li>
+                    </ul>
+                </section>
+
+                <section class="content-section">
+                    <h2>Why Air Quality Matters</h2>
+                    <p>Air pollution is one of the world's leading health risks. Poor air quality can cause respiratory
+                        issues, cardiovascular problems, and reduced quality of life. By staying informed about air
+                        quality levels, you can:</p>
+                    <ul>
+                        <li>Plan outdoor activities during safer times</li>
+                        <li>Protect vulnerable family members (children, elderly, those with respiratory conditions)
+                        </li>
+                        <li>Make informed decisions about exercise and commuting</li>
+                        <li>Understand environmental conditions in your area</li>
+                    </ul>
+                </section>
+
+                <section class="content-section">
+                    <h2>Data Sources</h2>
+                    <p>We source our air quality data from <a href="https://open-meteo.com" target="_blank"
+                            rel="noopener">Open-Meteo</a>, a trusted provider of meteorological and environmental data.
+                        All measurements follow international air quality standards.</p>
+                </section>
+
+                <section class="content-section">
+                    <h2>Our Commitment</h2>
+                    <p>We're committed to:</p>
+                    <ul>
+                        <li>Providing accurate, timely air quality information</li>
+                        <li>Maintaining a fast, reliable platform</li>
+                        <li>Protecting user privacy (we don't collect personal data)</li>
+                        <li>Continuous improvement based on user feedback</li>
+                        <li>Making air quality information accessible to everyone</li>
+                    </ul>
+                </section>
+            </main>
+
+            <footer class="app-footer">
+                <div class="footer-links">
+                    <a href="index.html">Home</a>
+                    <span class="footer-divider">•</span>
+                    <a href="about.html">About Us</a>
+                    <span class="footer-divider">•</span>
+                    <a href="contact.html">Contact Us</a>
+                </div>
+                <p class="footer-copyright">&copy; 2024 Breeze. All rights reserved.</p>
+            </footer>
+        </div>
+    </div>
+
+    <script>
+        // Check for saved dark mode preference
+        if (localStorage.getItem('darkMode') === null || localStorage.getItem('darkMode') === 'enabled') {
+            document.body.classList.add('dark-mode');
+        } else {
+            document.body.classList.remove('dark-mode');
+        }
+    </script>
+</body>
+
+</html>

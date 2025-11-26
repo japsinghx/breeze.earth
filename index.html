@@ -16,10 +16,53 @@
   <div class="app-background"></div>
 
   <div id="app">
+    <!-- Navigation Header -->
+    <nav class="app-nav">
+      <div class="nav-container">
+        <a href="index.html" class="nav-logo">
+          <svg class="logo-svg" width="32" height="32" viewBox="0 0 32 32" fill="none">
+            <!-- Wind lines - animated -->
+            <path class="wind-line wind-1" d="M4 10 Q 12 10, 16 8 T 28 10" stroke="currentColor" stroke-width="2.5"
+              stroke-linecap="round" />
+            <path class="wind-line wind-2" d="M6 16 Q 14 16, 18 14 T 26 16" stroke="currentColor" stroke-width="2.5"
+              stroke-linecap="round" />
+            <path class="wind-line wind-3" d="M4 22 Q 12 22, 16 20 T 28 22" stroke="currentColor" stroke-width="2.5"
+              stroke-linecap="round" />
+          </svg>
+          <span class="logo-text">Breeze</span>
+        </a>
+        <div class="nav-links">
+          <a href="about.html">About</a>
+          <a href="contact.html">Contact</a>
+          <label class="toggle-switch nav-toggle">
+            <input type="checkbox" id="dark-mode-toggle">
+            <span class="toggle-slider">
+              <svg class="toggle-icon sun-icon" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="5" />
+                <line x1="12" y1="1" x2="12" y2="3" />
+                <line x1="12" y1="21" x2="12" y2="23" />
+                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+                <line x1="1" y1="12" x2="3" y2="12" />
+                <line x1="21" y1="12" x2="23" y2="12" />
+                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+              </svg>
+              <svg class="toggle-icon moon-icon" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+              </svg>
+            </span>
+          </label>
+        </div>
+      </div>
+    </nav>
+
     <!-- Dark Mode Toggle at Top -->
-    <div class="top-controls">
+    <div class="top-controls" style="display: none;">
       <label class="toggle-switch">
-        <input type="checkbox" id="dark-mode-toggle">
+        <input type="checkbox" id="dark-mode-toggle-old">
         <span class="toggle-slider"></span>
         <span class="toggle-label">Dark Mode</span>
       </label>
@@ -27,7 +70,6 @@
 
     <div class="landing-container">
       <header id="main-header">
-        <h1>Breeze</h1>
         <p>Take a deep breath</p>
       </header>
 
@@ -42,7 +84,7 @@
                   <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                 </svg>
               </div>
-              <input type="text" id="location-input" placeholder="Search city..." autocomplete="off" />
+              <input type="text" id="location-input" placeholder="Search a city..." autocomplete="off" />
               <button id="locate-btn" title="Use my location">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
                   stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -59,10 +101,33 @@
     <!-- Live Ticker Section -->
     <section class="ticker-section" id="ticker-section">
       <div class="ticker-container">
-        <h3 class="ticker-title">
-          <i data-lucide="globe"></i>
-          Live Air Quality Around the World
-        </h3>
+        <div class="ticker-header">
+          <h3 class="ticker-title">
+            <i data-lucide="globe"></i>
+            Live Air Quality Around the World
+          </h3>
+          <div class="ticker-controls">
+            <button id="ticker-play-pause" class="ticker-control-btn" title="Pause/Play">
+              <svg class="play-icon hidden" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                <polygon points="5 3 19 12 5 21 5 3" />
+              </svg>
+              <svg class="pause-icon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                <rect x="6" y="4" width="4" height="16" />
+                <rect x="14" y="4" width="4" height="16" />
+              </svg>
+            </button>
+            <button id="ticker-speed-slow" class="ticker-control-btn" title="Slower">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="15 18 9 12 15 6" />
+              </svg>
+            </button>
+            <button id="ticker-speed-fast" class="ticker-control-btn" title="Faster">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="9 18 15 12 9 6" />
+              </svg>
+            </button>
+          </div>
+        </div>
         <div class="cities-ticker">
           <div class="ticker-track" id="ticker-track">
             <div class="ticker-loading">Loading global air quality data...</div>
@@ -80,112 +145,276 @@
       <div id="error-message" class="hidden"></div>
 
       <div id="dashboard" class="hidden">
-        <!-- Dashboard Controls -->
-        <div class="dashboard-controls">
-          <button id="share-btn" class="control-btn" title="Share">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
-              <polyline points="16 6 12 2 8 6" />
-              <line x1="12" y1="2" x2="12" y2="15" />
-            </svg>
-          </button>
-          <button id="email-btn" class="control-btn" title="Email">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="2" y="4" width="20" height="16" rx="2" />
-              <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
-            </svg>
-          </button>
-          <button id="pdf-btn" class="control-btn" title="Download PDF">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-              <polyline points="7 10 12 15 17 10" />
-              <line x1="12" y1="15" x2="12" y2="3" />
-            </svg>
-          </button>
-        </div>
-
-        <!-- Single View Grid -->
-        <div class="single-view-grid">
-          <!-- Left: AQI & Location -->
-          <div class="aqi-summary">
+        <!-- Dashboard Header with Controls -->
+        <div class="dashboard-header">
+          <div class="location-info">
             <h2 id="city-name">City Name</h2>
             <span id="date-time" class="timestamp">Today</span>
-            <div class="aqi-display">
-              <div class="aqi-number" id="aqi-value">--</div>
-              <div class="aqi-label">US AQI</div>
+          </div>
+          <div class="dashboard-controls">
+            <button id="share-btn" class="control-btn" title="Share">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+                <polyline points="16 6 12 2 8 6" />
+                <line x1="12" y1="2" x2="12" y2="15" />
+              </svg>
+            </button>
+            <button id="email-btn" class="control-btn" title="Email">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="2" y="4" width="20" height="16" rx="2" />
+                <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+              </svg>
+            </button>
+            <button id="pdf-btn" class="control-btn" title="Download PDF">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Horizontal 3-Column Layout -->
+        <div class="dashboard-content">
+          <!-- Left: AQI -->
+          <div class="aqi-section section-card">
+            <div class="aqi-hero-inline">
+              <div class="aqi-number-inline" id="aqi-value">--</div>
+              <span class="aqi-label-inline">US Air Quality Index</span>
             </div>
             <div class="aqi-status-inline">
-              <i data-lucide="info" class="status-icon-small"></i>
-              <div>
+              <div class="status-badge">
+                <div class="status-indicator"></div>
                 <h4 id="aqi-status-text">Good</h4>
-                <p id="aqi-description">Air quality is satisfactory.</p>
               </div>
+              <p id="aqi-description">Air quality is satisfactory.</p>
             </div>
           </div>
 
-          <!-- Center: Metrics Grid -->
-          <div class="metrics-compact">
-            <div class="metric-mini" id="pm25-card">
-              <i data-lucide="wind"></i>
-              <div>
-                <span class="mini-label">PM2.5</span>
-                <span class="mini-value"><span id="pm25-val">--</span></span>
+          <!-- Center: Metrics -->
+          <div class="section-card">
+            <h4 class="section-title">Air Quality Metrics</h4>
+            <div class="metrics-grid-compact">
+              <div class="metric-item" id="pm25-card">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path
+                    d="M9.59 4.59A2 2 0 1 1 11 8H2m10.59 11.41A2 2 0 1 0 14 16H2m15.73-8.27A2.5 2.5 0 1 1 19.5 12H2" />
+                </svg>
+                <div class="metric-data">
+                  <span class="metric-name">PM2.5</span>
+                  <span class="metric-val"><span id="pm25-val">--</span> µg/m³</span>
+                </div>
+                <button class="metric-info-btn" data-metric="pm25" title="More info">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10" />
+                    <path d="M12 16v-4" />
+                    <path d="M12 8h.01" />
+                  </svg>
+                </button>
+                <div class="metric-info-panel" id="pm25-info">
+                  <h5>Fine Particulate Matter (PM2.5)</h5>
+                  <p>Tiny particles ≤2.5 micrometers that can penetrate deep into lungs and bloodstream.</p>
+                  <div class="metric-ranges">
+                    <div class="range-item range-good">Good: 0-12 µg/m³</div>
+                    <div class="range-item range-moderate">Moderate: 12.1-35.4 µg/m³</div>
+                    <div class="range-item range-poor">Unhealthy: >35.4 µg/m³</div>
+                  </div>
+                  <span class="current-range" id="pm25-current">Your level: <strong>--</strong></span>
+                </div>
               </div>
-            </div>
 
-            <div class="metric-mini" id="pm10-card">
-              <i data-lucide="cloud"></i>
-              <div>
-                <span class="mini-label">PM10</span>
-                <span class="mini-value"><span id="pm10-val">--</span></span>
+              <div class="metric-item" id="pm10-card">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z" />
+                </svg>
+                <div class="metric-data">
+                  <span class="metric-name">PM10</span>
+                  <span class="metric-val"><span id="pm10-val">--</span> µg/m³</span>
+                </div>
+                <button class="metric-info-btn" data-metric="pm10" title="More info">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10" />
+                    <path d="M12 16v-4" />
+                    <path d="M12 8h.01" />
+                  </svg>
+                </button>
+                <div class="metric-info-panel" id="pm10-info">
+                  <h5>Coarse Particulate Matter (PM10)</h5>
+                  <p>Inhalable particles ≤10 micrometers from dust, pollen, and mold. Affects respiratory system.</p>
+                  <div class="metric-ranges">
+                    <div class="range-item range-good">Good: 0-54 µg/m³</div>
+                    <div class="range-item range-moderate">Moderate: 55-154 µg/m³</div>
+                    <div class="range-item range-poor">Unhealthy: >154 µg/m³</div>
+                  </div>
+                  <span class="current-range" id="pm10-current">Your level: <strong>--</strong></span>
+                </div>
               </div>
-            </div>
 
-            <div class="metric-mini" id="no2-card">
-              <i data-lucide="car"></i>
-              <div>
-                <span class="mini-label">NO₂</span>
-                <span class="mini-value"><span id="no2-val">--</span></span>
+              <div class="metric-item" id="no2-card">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path
+                    d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2" />
+                  <circle cx="7" cy="17" r="2" />
+                  <path d="M9 17h6" />
+                  <circle cx="17" cy="17" r="2" />
+                </svg>
+                <div class="metric-data">
+                  <span class="metric-name">NO₂</span>
+                  <span class="metric-val"><span id="no2-val">--</span> µg/m³</span>
+                </div>
+                <button class="metric-info-btn" data-metric="no2" title="More info">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10" />
+                    <path d="M12 16v-4" />
+                    <path d="M12 8h.01" />
+                  </svg>
+                </button>
+                <div class="metric-info-panel" id="no2-info">
+                  <h5>Nitrogen Dioxide (NO₂)</h5>
+                  <p>Reddish-brown gas from vehicle emissions and power plants. Irritates airways and reduces immunity.
+                  </p>
+                  <div class="metric-ranges">
+                    <div class="range-item range-good">Good: 0-53 µg/m³</div>
+                    <div class="range-item range-moderate">Moderate: 54-100 µg/m³</div>
+                    <div class="range-item range-poor">Unhealthy: >100 µg/m³</div>
+                  </div>
+                  <span class="current-range" id="no2-current">Your level: <strong>--</strong></span>
+                </div>
               </div>
-            </div>
 
-            <div class="metric-mini" id="so2-card">
-              <i data-lucide="factory"></i>
-              <div>
-                <span class="mini-label">SO₂</span>
-                <span class="mini-value"><span id="so2-val">--</span></span>
+              <div class="metric-item" id="so2-card">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="2" y="6" width="20" height="8" rx="1" />
+                  <path d="M17 14v7" />
+                  <path d="M7 14v7" />
+                  <path d="M17 3v3" />
+                  <path d="M7 3v3" />
+                  <path d="M10 14 2.3 6.3" />
+                  <path d="m14 6 7.7 7.7" />
+                  <path d="m8 6 8 8" />
+                </svg>
+                <div class="metric-data">
+                  <span class="metric-name">SO₂</span>
+                  <span class="metric-val"><span id="so2-val">--</span> µg/m³</span>
+                </div>
+                <button class="metric-info-btn" data-metric="so2" title="More info">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10" />
+                    <path d="M12 16v-4" />
+                    <path d="M12 8h.01" />
+                  </svg>
+                </button>
+                <div class="metric-info-panel" id="so2-info">
+                  <h5>Sulfur Dioxide (SO₂)</h5>
+                  <p>Colorless gas from fossil fuel combustion. Can trigger asthma and respiratory issues.</p>
+                  <div class="metric-ranges">
+                    <div class="range-item range-good">Good: 0-35 µg/m³</div>
+                    <div class="range-item range-moderate">Moderate: 36-75 µg/m³</div>
+                    <div class="range-item range-poor">Unhealthy: >75 µg/m³</div>
+                  </div>
+                  <span class="current-range" id="so2-current">Your level: <strong>--</strong></span>
+                </div>
               </div>
-            </div>
 
-            <div class="metric-mini" id="o3-card">
-              <i data-lucide="sun"></i>
-              <div>
-                <span class="mini-label">O₃</span>
-                <span class="mini-value"><span id="o3-val">--</span></span>
+              <div class="metric-item" id="o3-card">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="4" />
+                  <path d="M12 2v2" />
+                  <path d="M12 20v2" />
+                  <path d="m4.93 4.93 1.41 1.41" />
+                  <path d="m17.66 17.66 1.41 1.41" />
+                  <path d="M2 12h2" />
+                  <path d="M20 12h2" />
+                  <path d="m6.34 17.66-1.41 1.41" />
+                  <path d="m19.07 4.93-1.41 1.41" />
+                </svg>
+                <div class="metric-data">
+                  <span class="metric-name">Ozone</span>
+                  <span class="metric-val"><span id="o3-val">--</span> µg/m³</span>
+                </div>
+                <button class="metric-info-btn" data-metric="o3" title="More info">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10" />
+                    <path d="M12 16v-4" />
+                    <path d="M12 8h.01" />
+                  </svg>
+                </button>
+                <div class="metric-info-panel" id="o3-info">
+                  <h5>Ground-Level Ozone (O₃)</h5>
+                  <p>Formed by sunlight reacting with pollutants. Harmful to lungs, especially during outdoor
+                    activities.</p>
+                  <div class="metric-ranges">
+                    <div class="range-item range-good">Good: 0-54 µg/m³</div>
+                    <div class="range-item range-moderate">Moderate: 55-70 µg/m³</div>
+                    <div class="range-item range-poor">Unhealthy: >70 µg/m³</div>
+                  </div>
+                  <span class="current-range" id="o3-current">Your level: <strong>--</strong></span>
+                </div>
               </div>
-            </div>
 
-            <div class="metric-mini" id="co-card">
-              <i data-lucide="flame"></i>
-              <div>
-                <span class="mini-label">CO</span>
-                <span class="mini-value"><span id="co-val">--</span></span>
+              <div class="metric-item" id="co-card">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path
+                    d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" />
+                </svg>
+                <div class="metric-data">
+                  <span class="metric-name">CO</span>
+                  <span class="metric-val"><span id="co-val">--</span> µg/m³</span>
+                </div>
+                <button class="metric-info-btn" data-metric="co" title="More info">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10" />
+                    <path d="M12 16v-4" />
+                    <path d="M12 8h.01" />
+                  </svg>
+                </button>
+                <div class="metric-info-panel" id="co-info">
+                  <h5>Carbon Monoxide (CO)</h5>
+                  <p>Odorless, colorless gas from incomplete combustion. Reduces oxygen delivery to body tissues.</p>
+                  <div class="metric-ranges">
+                    <div class="range-item range-good">Good: 0-4,400 µg/m³</div>
+                    <div class="range-item range-moderate">Moderate: 4,401-9,400 µg/m³</div>
+                    <div class="range-item range-poor">Unhealthy: >9,400 µg/m³</div>
+                  </div>
+                  <span class="current-range" id="co-current">Your level: <strong>--</strong></span>
+                </div>
               </div>
             </div>
           </div>
 
           <!-- Right: Health Tips -->
-          <div class="tips-compact">
-            <h4><i data-lucide="heart-pulse"></i> Recommendations</h4>
-            <ul id="health-tips">
+          <div class="section-card">
+            <h4 class="section-title">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path
+                  d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
+              </svg>
+              Health Recommendations
+            </h4>
+            <ul id="health-tips" class="health-tips-list">
               <li>Loading...</li>
             </ul>
           </div>
         </div>
       </div>
 
-      <footer>
-        <p>Powered by Doaba Studios</p>
+
+      <footer class="app-footer">
+        <div class="footer-links">
+          <a href="about.html">About Us</a>
+          <span class="footer-divider">•</span>
+          <a href="contact.html">Contact Us</a>
+          <span class="footer-divider">•</span>
+          <div class="powered-by-dropdown">
+            <span class="powered-by-trigger">Powered by ▾</span>
+            <div class="powered-by-menu">
+              <a href="https://open-meteo.com" target="_blank" rel="noopener">Open-Meteo API</a>
+              <a href="https://nominatim.org" target="_blank" rel="noopener">Nominatim Geocoding</a>
+            </div>
+          </div>
+        </div>
+        <p class="footer-copyright">&copy; 2024 Breeze. All rights reserved.</p>
       </footer>
     </main>
   </div>

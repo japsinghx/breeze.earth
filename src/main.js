@@ -68,12 +68,31 @@ async function initializeTicker() {
           city.aqi <= 200 ? 'unhealthy' : 'hazardous';
 
       return `
-        <div class="ticker-item aqi-${aqiClass}">
+        <div class="ticker-item aqi-${aqiClass}" data-city="${city.name}" data-lat="${city.lat}" data-lon="${city.lon}">
           <span class="ticker-city">${city.name}</span>
           <span class="ticker-aqi ${aqiClass}">AQI ${city.aqi}</span>
         </div>
       `;
     }).join('');
+
+    // Add click handlers to ticker items
+    document.querySelectorAll('.ticker-item').forEach(item => {
+      item.addEventListener('click', async () => {
+        const cityName = item.dataset.city;
+        const lat = parseFloat(item.dataset.lat);
+        const lon = parseFloat(item.dataset.lon);
+
+        // Update input field
+        locationInput.value = cityName;
+
+        // Fetch and display data
+        // The existing fetchAirQuality function already handles showLoading, updateUI, and showError
+        await fetchAirQuality(lat, lon, cityName);
+      });
+
+      // Add hover effect
+      item.style.cursor = 'pointer';
+    });
 
     // Initialize Lucide icons for ticker
     if (typeof lucide !== 'undefined') {
@@ -294,21 +313,23 @@ function updateUI(data, locationName) {
   aqiStatusTextEl.textContent = status.text;
   aqiDescEl.textContent = status.description;
 
-  // Color AQI display
-  const aqiDisplay = document.querySelector('.aqi-display');
-  if (aqiDisplay) {
-    aqiDisplay.style.background = `${status.color}15`;
-    aqiDisplay.style.borderLeft = `4px solid ${status.color}`;
+  // Color the AQI number and status indicator
+  const aqiNumberEl = document.querySelector('.aqi-number-large');
+  const statusIndicator = document.querySelector('.status-indicator');
+
+  if (aqiNumberEl) {
+    aqiNumberEl.style.color = status.color;
   }
 
-  const aqiNumber = document.querySelector('.aqi-number');
-  if (aqiNumber) {
-    aqiNumber.style.color = status.color;
+  if (statusIndicator) {
+    statusIndicator.style.backgroundColor = status.color;
+    statusIndicator.style.boxShadow = `0 0 0 3px ${status.color}20`;
   }
 
-  const statusIcon = document.querySelector('.status-icon-small');
-  if (statusIcon) {
-    statusIcon.style.color = status.color;
+  // Update status text color
+  const statusH3 = document.querySelector('.status-text h3');
+  if (statusH3) {
+    statusH3.style.color = status.color;
   }
 
   // Pollutants - Update values and colors
@@ -321,98 +342,142 @@ function updateUI(data, locationName) {
 
   // Health Tips
   healthTipsList.innerHTML = status.tips.map(tip => `<li>${tip}</li>`).join('');
-
-  // Re-initialize Lucide icons
-  if (typeof lucide !== 'undefined') {
-    lucide.createIcons();
-  }
 }
 
 function updatePollutant(id, value, goodLimit, moderateLimit) {
   const valEl = document.getElementById(`${id}-val`);
   const cardEl = document.getElementById(`${id}-card`);
+  const currentRangeEl = document.getElementById(`${id}-current`);
+  const infoPanelEl = document.getElementById(`${id}-info`);
 
   if (!valEl || !cardEl) return;
 
-  valEl.textContent = Math.round(value);
+  const roundedValue = Math.round(value);
+  valEl.textContent = roundedValue;
 
   // Remove existing status classes
   cardEl.classList.remove('status-good', 'status-moderate', 'status-poor');
 
+  // Determine status
+  let statusClass = '';
+  let statusText = '';
+
   if (value <= goodLimit) {
     cardEl.classList.add('status-good');
+    statusClass = 'good';
+    statusText = 'Good';
   } else if (value <= moderateLimit) {
     cardEl.classList.add('status-moderate');
+    statusClass = 'moderate';
+    statusText = 'Moderate';
   } else {
     cardEl.classList.add('status-poor');
+    statusClass = 'poor';
+    statusText = 'Unhealthy';
+  }
+
+  // Update current range display in info panel
+  if (currentRangeEl) {
+    currentRangeEl.innerHTML = `Your level: <strong>${roundedValue} µg/m³ (${statusText})</strong>`;
+  }
+
+  // Highlight the current range in the info panel
+  if (infoPanelEl) {
+    const rangeItems = infoPanelEl.querySelectorAll('.range-item');
+    rangeItems.forEach((item, index) => {
+      item.classList.remove('current');
+      if (
+        (index === 0 && statusClass === 'good') ||
+        (index === 1 && statusClass === 'moderate') ||
+        (index === 2 && statusClass === 'poor')
+      ) {
+        item.classList.add('current');
+      }
+    });
   }
 }
 
 function getAQIStatus(aqi) {
-  // Granular AQI Categories
+  // Granular AQI Categories with playful emojis
   if (aqi <= 25) {
     return {
-      text: 'Excellent',
-      description: 'Air quality is pristine. Perfect for all outdoor activities.',
+      text: 'Excellent ✨',
+      description: 'Air quality is pristine! Perfect day for adventures.',
       color: 'var(--aqi-good)',
-      tips: ['Enjoy the fresh air!', 'Great time for exercise and outdoor play.']
+      tips: ['Go outside and soak it all in! 🌟', 'Perfect time for that morning jog! 🏃', 'Windows open, fresh air flowing! 🪟']
     };
   } else if (aqi <= 50) {
     return {
-      text: 'Good',
-      description: 'Air quality is satisfactory and poses little or no risk.',
+      text: 'Good 😊',
+      description: 'Air quality is great. Breathe easy!',
       color: 'var(--aqi-good)',
-      tips: ['Open windows to ventilate your home.', 'Outdoor activities are safe for everyone.']
+      tips: ['Open those windows! 🪟', 'Great day for outdoor activities! ⚽', 'Take a deep breath and enjoy! 🌬️']
     };
   } else if (aqi <= 75) {
     return {
-      text: 'Moderate',
-      description: 'Air quality is acceptable; however, there may be some concern for very sensitive people.',
+      text: 'Moderate 😐',
+      description: 'Air quality is acceptable for most people.',
       color: 'var(--aqi-moderate)',
-      tips: ['Sensitive individuals should consider limiting prolonged outdoor exertion.', 'Generally safe for most people.']
+      tips: ['Sensitive folks, take it easy! 🤔', 'Maybe skip that marathon today 🏃‍♀️', 'Still pretty good for most activities!']
     };
   } else if (aqi <= 100) {
     return {
-      text: 'Moderate High',
-      description: 'Air quality is acceptable but approaching unhealthy for sensitive groups.',
+      text: 'Moderate High 😕',
+      description: 'Getting a bit iffy for sensitive groups.',
       color: 'var(--aqi-moderate)',
-      tips: ['If you have respiratory issues, keep an eye on how you feel.', 'Reduce heavy exertion outdoors if you are sensitive.']
+      tips: ['If you have asthma, keep that inhaler handy! 💨', 'Light outdoor activities are okay 👍', 'Stay hydrated! 💧']
     };
   } else if (aqi <= 150) {
     return {
-      text: 'Unhealthy for Sensitive Groups',
-      description: 'Members of sensitive groups may experience health effects.',
+      text: 'Unhealthy for Sensitive Groups 😷',
+      description: 'Sensitive groups should be cautious.',
       color: 'var(--aqi-unhealthy-sensitive)',
-      tips: ['People with asthma should keep medicine handy.', 'Children and older adults should limit outdoor exertion.']
+      tips: ['Kids and elderly, maybe stay inside 🏠', 'Asthma? Keep medicine close! 💊', 'Cut that outdoor workout short ⏱️']
     };
   } else if (aqi <= 200) {
     return {
-      text: 'Unhealthy',
-      description: 'Everyone may begin to experience health effects.',
+      text: 'Unhealthy 😨',
+      description: 'Everyone may feel the effects now.',
       color: 'var(--aqi-unhealthy)',
-      tips: ['Avoid prolonged outdoor exertion.', 'Wear a mask if you must go outside.', 'Keep windows closed.']
+      tips: ['Indoor day, folks! 🏠', 'Mask up if you must go out 😷', 'Windows closed, please! 🚪']
     };
   } else if (aqi <= 300) {
     return {
-      text: 'Very Unhealthy',
-      description: 'Health warnings of emergency conditions. The entire population is more likely to be affected.',
+      text: 'Very Unhealthy 🚨',
+      description: 'Serious health concerns for everyone.',
       color: 'var(--aqi-very-unhealthy)',
-      tips: ['Avoid all outdoor activities.', 'Use an air purifier indoors.', 'Seal windows and doors.']
+      tips: ['Stay inside! Not a suggestion! 🛑', 'Air purifier time! 💨', 'Seal those windows ASAP! 🔒']
     };
   } else {
     return {
-      text: 'Hazardous',
-      description: 'Health alert: everyone may experience more serious health effects.',
+      text: 'Hazardous ☠️',
+      description: 'Emergency conditions. Seriously bad air.',
       color: 'var(--aqi-hazardous)',
-      tips: ['Stay indoors and keep activity levels low.', 'Do not open windows.', 'Wear a high-quality mask if you must go outside.']
+      tips: ['STAY INSIDE. Really. 🏠', 'N95 mask minimum if you go out 😷', 'Air purifier on full blast! 💨', 'Check on your neighbors! 👥']
     };
   }
 }
 
 function showLoading() {
+  const messages = [
+    'Sniffing the air...',
+    'Analyzing atmosphere...',
+    'Checking the breeze...',
+    'Reading the wind...',
+    'Measuring air vibes...',
+    'Consulting the clouds...',
+    'Asking the trees...'
+  ];
+  const randomMessage = messages[Math.floor(Math.random() * messages.length)];
+
   loadingDiv.classList.remove('hidden');
   dashboardDiv.classList.add('hidden');
   errorDiv.classList.add('hidden');
+
+  const loadingText = loadingDiv.querySelector('p');
+  if (loadingText) {
+    loadingText.textContent = randomMessage;
+  }
 }
 
 function showError(msg) {
@@ -424,4 +489,99 @@ function showError(msg) {
 
 function hideLoading() {
   loadingDiv.classList.add('hidden');
+}
+
+// Metric Info Panel Toggle
+document.addEventListener('click', (e) => {
+  const infoBtn = e.target.closest('.metric-info-btn');
+
+  if (infoBtn) {
+    e.stopPropagation();
+    const metric = infoBtn.dataset.metric;
+    const panel = document.getElementById(`${metric}-info`);
+
+    if (panel) {
+      // Close all other panels
+      document.querySelectorAll('.metric-info-panel').forEach(p => {
+        if (p !== panel) {
+          p.classList.remove('active');
+        }
+      });
+
+      // Toggle current panel
+      panel.classList.toggle('active');
+
+      // Rotate button
+      if (panel.classList.contains('active')) {
+        infoBtn.style.transform = 'rotate(180deg)';
+      } else {
+        infoBtn.style.transform = 'rotate(0deg)';
+      }
+    }
+  }
+});
+
+// Close info panels when clicking outside
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.metric-item')) {
+    document.querySelectorAll('.metric-info-panel').forEach(panel => {
+      panel.classList.remove('active');
+    });
+    document.querySelectorAll('.metric-info-btn').forEach(btn => {
+      btn.style.transform = 'rotate(0deg)';
+    });
+  }
+});
+
+// Ticker Controls
+let tickerSpeed = 25; // seconds
+let tickerPaused = false;
+
+const tickerTrackEl = document.getElementById('ticker-track');
+const playPauseBtn = document.getElementById('ticker-play-pause');
+const speedSlowBtn = document.getElementById('ticker-speed-slow');
+const speedFastBtn = document.getElementById('ticker-speed-fast');
+
+function updateTickerAnimation() {
+  if (tickerTrackEl) {
+    if (tickerPaused) {
+      tickerTrackEl.style.animationPlayState = 'paused';
+    } else {
+      tickerTrackEl.style.animationPlayState = 'running';
+      tickerTrackEl.style.animationDuration = `${tickerSpeed}s`;
+    }
+  }
+}
+
+if (playPauseBtn) {
+  playPauseBtn.addEventListener('click', () => {
+    tickerPaused = !tickerPaused;
+
+    const playIcon = playPauseBtn.querySelector('.play-icon');
+    const pauseIcon = playPauseBtn.querySelector('.pause-icon');
+
+    if (tickerPaused) {
+      playIcon.classList.remove('hidden');
+      pauseIcon.classList.add('hidden');
+    } else {
+      playIcon.classList.add('hidden');
+      pauseIcon.classList.remove('hidden');
+    }
+
+    updateTickerAnimation();
+  });
+}
+
+if (speedSlowBtn) {
+  speedSlowBtn.addEventListener('click', () => {
+    tickerSpeed = Math.min(tickerSpeed + 5, 40); // Max 40s
+    updateTickerAnimation();
+  });
+}
+
+if (speedFastBtn) {
+  speedFastBtn.addEventListener('click', () => {
+    tickerSpeed = Math.max(tickerSpeed - 5, 10); // Min 10s
+    updateTickerAnimation();
+  });
 }
