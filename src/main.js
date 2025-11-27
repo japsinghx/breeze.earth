@@ -25,6 +25,9 @@ const coVal = document.getElementById('co-val');
 
 const healthTipsList = document.getElementById('health-tips');
 
+// Store current metric values for modal display
+let currentMetricValues = {};
+
 // Top 10 most populated cities with coordinates
 const topCities = [
   { name: 'Tokyo', country: 'Japan', lat: 35.6762, lon: 139.6503 },
@@ -68,12 +71,31 @@ async function initializeTicker() {
           city.aqi <= 200 ? 'unhealthy' : 'hazardous';
 
       return `
-        <div class="ticker-item aqi-${aqiClass}">
+        <div class="ticker-item aqi-${aqiClass}" data-city="${city.name}" data-lat="${city.lat}" data-lon="${city.lon}">
           <span class="ticker-city">${city.name}</span>
           <span class="ticker-aqi ${aqiClass}">AQI ${city.aqi}</span>
         </div>
       `;
     }).join('');
+
+    // Add click handlers to ticker items
+    document.querySelectorAll('.ticker-item').forEach(item => {
+      item.addEventListener('click', async () => {
+        const cityName = item.dataset.city;
+        const lat = parseFloat(item.dataset.lat);
+        const lon = parseFloat(item.dataset.lon);
+
+        // Update input field
+        locationInput.value = cityName;
+
+        // Fetch and display data
+        // The existing fetchAirQuality function already handles showLoading, updateUI, and showError
+        await fetchAirQuality(lat, lon, cityName);
+      });
+
+      // Add hover effect
+      item.style.cursor = 'pointer';
+    });
 
     // Initialize Lucide icons for ticker
     if (typeof lucide !== 'undefined') {
@@ -89,11 +111,13 @@ async function initializeTicker() {
 initializeTicker();
 
 let debounceTimer;
+let selectedSuggestionIndex = -1;
 
 // Event Listeners
 locationInput.addEventListener('input', (e) => {
   clearTimeout(debounceTimer);
   const query = e.target.value.trim();
+  selectedSuggestionIndex = -1; // Reset selection on new input
 
   if (query.length < 2) {
     suggestionsList.classList.add('hidden');
@@ -105,10 +129,49 @@ locationInput.addEventListener('input', (e) => {
   }, 300);
 });
 
+// Keyboard navigation for suggestions
+locationInput.addEventListener('keydown', (e) => {
+  const suggestions = suggestionsList.querySelectorAll('.suggestion-item');
+
+  if (suggestions.length === 0 || suggestionsList.classList.contains('hidden')) {
+    return;
+  }
+
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    selectedSuggestionIndex = Math.min(selectedSuggestionIndex + 1, suggestions.length - 1);
+    updateSuggestionSelection(suggestions);
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    selectedSuggestionIndex = Math.max(selectedSuggestionIndex - 1, -1);
+    updateSuggestionSelection(suggestions);
+  } else if (e.key === 'Enter') {
+    e.preventDefault();
+    if (selectedSuggestionIndex >= 0 && selectedSuggestionIndex < suggestions.length) {
+      suggestions[selectedSuggestionIndex].click();
+    }
+  } else if (e.key === 'Escape') {
+    suggestionsList.classList.add('hidden');
+    selectedSuggestionIndex = -1;
+  }
+});
+
+function updateSuggestionSelection(suggestions) {
+  suggestions.forEach((item, index) => {
+    if (index === selectedSuggestionIndex) {
+      item.classList.add('keyboard-selected');
+      item.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    } else {
+      item.classList.remove('keyboard-selected');
+    }
+  });
+}
+
 // Hide suggestions when clicking outside
 document.addEventListener('click', (e) => {
   if (!locationInput.contains(e.target) && !suggestionsList.contains(e.target)) {
     suggestionsList.classList.add('hidden');
+    selectedSuggestionIndex = -1;
   }
 });
 
@@ -258,12 +321,60 @@ async function fetchAirQuality(lat, lon, locationName) {
       return;
     }
 
+    // Update URL with location data for deep linking
+    updateURL(locationName, lat, lon);
+
     updateUI(data.current, locationName);
   } catch (err) {
     showError('Failed to fetch air quality data.');
     console.error(err);
   }
 }
+
+// Update URL with location parameters
+function updateURL(locationName, lat, lon) {
+  const params = new URLSearchParams();
+  params.set('city', locationName);
+  params.set('lat', lat.toFixed(4));
+  params.set('lon', lon.toFixed(4));
+
+  const newURL = `${window.location.pathname}?${params.toString()}`;
+  window.history.pushState({ locationName, lat, lon }, '', newURL);
+}
+
+// Load location from URL on page load
+function loadFromURL() {
+  const params = new URLSearchParams(window.location.search);
+  const city = params.get('city');
+  const lat = params.get('lat');
+  const lon = params.get('lon');
+
+  if (city && lat && lon) {
+    // Auto-load the location from URL
+    fetchAirQuality(parseFloat(lat), parseFloat(lon), city);
+    // Update the input field
+    if (locationInput) {
+      locationInput.value = city;
+    }
+  }
+}
+
+// Call loadFromURL when page loads
+window.addEventListener('DOMContentLoaded', loadFromURL);
+
+// Handle browser back/forward buttons
+window.addEventListener('popstate', (event) => {
+  if (event.state && event.state.locationName) {
+    // Restore from history state
+    fetchAirQuality(event.state.lat, event.state.lon, event.state.locationName);
+    if (locationInput) {
+      locationInput.value = event.state.locationName;
+    }
+  } else {
+    // No state, reload from URL or go back to landing
+    loadFromURL();
+  }
+});
 
 const appDiv = document.getElementById('app');
 
@@ -294,21 +405,23 @@ function updateUI(data, locationName) {
   aqiStatusTextEl.textContent = status.text;
   aqiDescEl.textContent = status.description;
 
-  // Color AQI display
-  const aqiDisplay = document.querySelector('.aqi-display');
-  if (aqiDisplay) {
-    aqiDisplay.style.background = `${status.color}15`;
-    aqiDisplay.style.borderLeft = `4px solid ${status.color}`;
+  // Color the AQI number and status indicator
+  const aqiNumberEl = document.querySelector('.aqi-number-large');
+  const statusIndicator = document.querySelector('.status-indicator');
+
+  if (aqiNumberEl) {
+    aqiNumberEl.style.color = status.color;
   }
 
-  const aqiNumber = document.querySelector('.aqi-number');
-  if (aqiNumber) {
-    aqiNumber.style.color = status.color;
+  if (statusIndicator) {
+    statusIndicator.style.backgroundColor = status.color;
+    statusIndicator.style.boxShadow = `0 0 0 3px ${status.color}20`;
   }
 
-  const statusIcon = document.querySelector('.status-icon-small');
-  if (statusIcon) {
-    statusIcon.style.color = status.color;
+  // Update status text color
+  const statusH3 = document.querySelector('.status-text h3');
+  if (statusH3) {
+    statusH3.style.color = status.color;
   }
 
   // Pollutants - Update values and colors
@@ -321,11 +434,6 @@ function updateUI(data, locationName) {
 
   // Health Tips
   healthTipsList.innerHTML = status.tips.map(tip => `<li>${tip}</li>`).join('');
-
-  // Re-initialize Lucide icons
-  if (typeof lucide !== 'undefined') {
-    lucide.createIcons();
-  }
 }
 
 function updatePollutant(id, value, goodLimit, moderateLimit) {
@@ -334,11 +442,16 @@ function updatePollutant(id, value, goodLimit, moderateLimit) {
 
   if (!valEl || !cardEl) return;
 
-  valEl.textContent = Math.round(value);
+  const roundedValue = Math.round(value);
+  valEl.textContent = roundedValue;
+
+  // Store value for modal display
+  currentMetricValues[id] = roundedValue;
 
   // Remove existing status classes
   cardEl.classList.remove('status-good', 'status-moderate', 'status-poor');
 
+  // Determine status
   if (value <= goodLimit) {
     cardEl.classList.add('status-good');
   } else if (value <= moderateLimit) {
@@ -349,70 +462,86 @@ function updatePollutant(id, value, goodLimit, moderateLimit) {
 }
 
 function getAQIStatus(aqi) {
-  // Granular AQI Categories
+  // Granular AQI Categories with playful emojis
   if (aqi <= 25) {
     return {
-      text: 'Excellent',
-      description: 'Air quality is pristine. Perfect for all outdoor activities.',
+      text: 'Excellent ✨',
+      description: 'Air quality is pristine! Perfect day for adventures.',
       color: 'var(--aqi-good)',
-      tips: ['Enjoy the fresh air!', 'Great time for exercise and outdoor play.']
+      tips: ['Go outside and soak it all in! 🌟', 'Perfect time for that morning jog! 🏃', 'Windows open, fresh air flowing! 🪟']
     };
   } else if (aqi <= 50) {
     return {
-      text: 'Good',
-      description: 'Air quality is satisfactory and poses little or no risk.',
+      text: 'Good 😊',
+      description: 'Air quality is great. Breathe easy!',
       color: 'var(--aqi-good)',
-      tips: ['Open windows to ventilate your home.', 'Outdoor activities are safe for everyone.']
+      tips: ['Open those windows! 🪟', 'Great day for outdoor activities! ⚽', 'Take a deep breath and enjoy! 🌬️']
     };
   } else if (aqi <= 75) {
     return {
-      text: 'Moderate',
-      description: 'Air quality is acceptable; however, there may be some concern for very sensitive people.',
+      text: 'Moderate 😐',
+      description: 'Air quality is acceptable for most people.',
       color: 'var(--aqi-moderate)',
-      tips: ['Sensitive individuals should consider limiting prolonged outdoor exertion.', 'Generally safe for most people.']
+      tips: ['Sensitive folks, take it easy! 🤔', 'Maybe skip that marathon today 🏃‍♀️', 'Still pretty good for most activities!']
     };
   } else if (aqi <= 100) {
     return {
-      text: 'Moderate High',
-      description: 'Air quality is acceptable but approaching unhealthy for sensitive groups.',
+      text: 'Moderate High 😕',
+      description: 'Getting a bit iffy for sensitive groups.',
       color: 'var(--aqi-moderate)',
-      tips: ['If you have respiratory issues, keep an eye on how you feel.', 'Reduce heavy exertion outdoors if you are sensitive.']
+      tips: ['If you have asthma, keep that inhaler handy! 💨', 'Light outdoor activities are okay 👍', 'Stay hydrated! 💧']
     };
   } else if (aqi <= 150) {
     return {
-      text: 'Unhealthy for Sensitive Groups',
-      description: 'Members of sensitive groups may experience health effects.',
+      text: 'Unhealthy for Sensitive Groups 😷',
+      description: 'Sensitive groups should be cautious.',
       color: 'var(--aqi-unhealthy-sensitive)',
-      tips: ['People with asthma should keep medicine handy.', 'Children and older adults should limit outdoor exertion.']
+      tips: ['Kids and elderly, maybe stay inside 🏠', 'Asthma? Keep medicine close! 💊', 'Cut that outdoor workout short ⏱️']
     };
   } else if (aqi <= 200) {
     return {
-      text: 'Unhealthy',
-      description: 'Everyone may begin to experience health effects.',
+      text: 'Unhealthy 😨',
+      description: 'Everyone may feel the effects now.',
       color: 'var(--aqi-unhealthy)',
-      tips: ['Avoid prolonged outdoor exertion.', 'Wear a mask if you must go outside.', 'Keep windows closed.']
+      tips: ['Indoor day, folks! 🏠', 'Mask up if you must go out 😷', 'Windows closed, please! 🚪']
     };
   } else if (aqi <= 300) {
     return {
-      text: 'Very Unhealthy',
-      description: 'Health warnings of emergency conditions. The entire population is more likely to be affected.',
+      text: 'Very Unhealthy 🚨',
+      description: 'Serious health concerns for everyone.',
       color: 'var(--aqi-very-unhealthy)',
-      tips: ['Avoid all outdoor activities.', 'Use an air purifier indoors.', 'Seal windows and doors.']
+      tips: ['Stay inside! Not a suggestion! 🛑', 'Air purifier time! 💨', 'Seal those windows ASAP! 🔒']
     };
   } else {
     return {
-      text: 'Hazardous',
-      description: 'Health alert: everyone may experience more serious health effects.',
+      text: 'Hazardous ☠️',
+      description: 'Emergency conditions. Seriously bad air.',
       color: 'var(--aqi-hazardous)',
-      tips: ['Stay indoors and keep activity levels low.', 'Do not open windows.', 'Wear a high-quality mask if you must go outside.']
+      tips: ['STAY INSIDE. Really. 🏠', 'N95 mask minimum if you go out 😷', 'Air purifier on full blast! 💨', 'Check on your neighbors! 👥']
     };
   }
 }
 
 function showLoading() {
+  const messages = [
+    'Sniffing the air...',
+    'Analyzing atmosphere...',
+    'Checking the breeze...',
+    'Reading the wind...',
+    'Measuring air vibes...',
+    'Consulting the clouds...',
+    'Asking the trees...'
+  ];
+  const randomMessage = messages[Math.floor(Math.random() * messages.length)];
+
   loadingDiv.classList.remove('hidden');
   dashboardDiv.classList.add('hidden');
   errorDiv.classList.add('hidden');
+
+  const loadingText = loadingDiv.querySelector('p');
+  if (loadingText) {
+    loadingText.textContent = randomMessage;
+  }
 }
 
 function showError(msg) {
@@ -424,4 +553,200 @@ function showError(msg) {
 
 function hideLoading() {
   loadingDiv.classList.add('hidden');
+}
+
+// Metric Info Modal
+const metricModal = document.getElementById('metric-modal');
+const metricModalBackdrop = document.getElementById('metric-modal-backdrop');
+const metricModalClose = document.getElementById('metric-modal-close');
+const metricModalTitle = document.getElementById('metric-modal-title');
+const metricModalSubtitle = document.getElementById('metric-modal-subtitle');
+const metricModalCurrent = document.getElementById('metric-modal-current');
+const metricModalRanges = document.getElementById('metric-modal-ranges');
+
+// Metric information data
+const metricInfo = {
+  pm25: {
+    title: 'Fine Particulate Matter (PM2.5)',
+    description: 'Tiny particles ≤2.5 micrometers that can penetrate deep into lungs and bloodstream.',
+    ranges: [
+      { label: 'Good', range: '0-12 µg/m³', class: 'range-good', min: 0, max: 12 },
+      { label: 'Moderate', range: '12.1-35.4 µg/m³', class: 'range-moderate', min: 12.1, max: 35.4 },
+      { label: 'Unhealthy', range: '>35.4 µg/m³', class: 'range-poor', min: 35.4, max: Infinity }
+    ]
+  },
+  pm10: {
+    title: 'Coarse Particulate Matter (PM10)',
+    description: 'Inhalable particles ≤10 micrometers from dust, pollen, and mold. Affects respiratory system.',
+    ranges: [
+      { label: 'Good', range: '0-54 µg/m³', class: 'range-good', min: 0, max: 54 },
+      { label: 'Moderate', range: '55-154 µg/m³', class: 'range-moderate', min: 55, max: 154 },
+      { label: 'Unhealthy', range: '>154 µg/m³', class: 'range-poor', min: 154, max: Infinity }
+    ]
+  },
+  no2: {
+    title: 'Nitrogen Dioxide (NO₂)',
+    description: 'Reddish-brown gas from vehicle emissions and power plants. Irritates airways and reduces immunity.',
+    ranges: [
+      { label: 'Good', range: '0-53 µg/m³', class: 'range-good', min: 0, max: 53 },
+      { label: 'Moderate', range: '54-100 µg/m³', class: 'range-moderate', min: 54, max: 100 },
+      { label: 'Unhealthy', range: '>100 µg/m³', class: 'range-poor', min: 100, max: Infinity }
+    ]
+  },
+  so2: {
+    title: 'Sulfur Dioxide (SO₂)',
+    description: 'Colorless gas from fossil fuel combustion. Can trigger asthma and respiratory issues.',
+    ranges: [
+      { label: 'Good', range: '0-35 µg/m³', class: 'range-good', min: 0, max: 35 },
+      { label: 'Moderate', range: '36-75 µg/m³', class: 'range-moderate', min: 36, max: 75 },
+      { label: 'Unhealthy', range: '>75 µg/m³', class: 'range-poor', min: 75, max: Infinity }
+    ]
+  },
+  o3: {
+    title: 'Ground-Level Ozone (O₃)',
+    description: 'Formed by sunlight reacting with pollutants. Harmful to lungs, especially during outdoor activities.',
+    ranges: [
+      { label: 'Good', range: '0-54 µg/m³', class: 'range-good', min: 0, max: 54 },
+      { label: 'Moderate', range: '55-70 µg/m³', class: 'range-moderate', min: 55, max: 70 },
+      { label: 'Unhealthy', range: '>70 µg/m³', class: 'range-poor', min: 70, max: Infinity }
+    ]
+  },
+  co: {
+    title: 'Carbon Monoxide (CO)',
+    description: 'Odorless, colorless gas from incomplete combustion. Reduces oxygen delivery to body tissues.',
+    ranges: [
+      { label: 'Good', range: '0-4,400 µg/m³', class: 'range-good', min: 0, max: 4400 },
+      { label: 'Moderate', range: '4,401-9,400 µg/m³', class: 'range-moderate', min: 4401, max: 9400 },
+      { label: 'Unhealthy', range: '>9,400 µg/m³', class: 'range-poor', min: 9400, max: Infinity }
+    ]
+  }
+};
+
+function openMetricModal(metricId) {
+  const info = metricInfo[metricId];
+  if (!info) return;
+
+  // Set modal content
+  metricModalTitle.textContent = info.title;
+  metricModalSubtitle.textContent = info.description;
+
+  // Get current value
+  const currentValue = currentMetricValues[metricId] || '--';
+
+  // Determine current status
+  let statusText = 'Unknown';
+  if (currentValue !== '--') {
+    const value = parseFloat(currentValue);
+    for (const range of info.ranges) {
+      if (value >= range.min && value <= range.max) {
+        statusText = range.label;
+        break;
+      }
+    }
+  }
+
+  // Set current level display
+  if (currentValue !== '--') {
+    metricModalCurrent.innerHTML = `<strong>${currentValue} µg/m³</strong> (${statusText})`;
+  } else {
+    metricModalCurrent.innerHTML = '<strong>--</strong>';
+  }
+
+  // Populate ranges
+  metricModalRanges.innerHTML = info.ranges.map(range => {
+    const isCurrent = currentValue !== '--' &&
+      parseFloat(currentValue) >= range.min &&
+      parseFloat(currentValue) <= range.max;
+    return `
+      <div class="range-item ${range.class} ${isCurrent ? 'current' : ''}">
+        <span>${range.label}</span>
+        <span>${range.range}</span>
+      </div>
+    `;
+  }).join('');
+
+  // Show modal
+  metricModal.classList.add('active');
+  metricModalBackdrop.classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeMetricModal() {
+  metricModal.classList.remove('active');
+  metricModalBackdrop.classList.remove('active');
+  document.body.style.overflow = '';
+}
+
+// Click handler for info buttons
+document.addEventListener('click', (e) => {
+  const infoBtn = e.target.closest('.metric-info-btn');
+  if (infoBtn) {
+    e.stopPropagation();
+    const metric = infoBtn.dataset.metric;
+    openMetricModal(metric);
+  }
+});
+
+// Close modal handlers
+metricModalClose.addEventListener('click', closeMetricModal);
+metricModalBackdrop.addEventListener('click', closeMetricModal);
+
+// Close on Escape key
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && metricModal.classList.contains('active')) {
+    closeMetricModal();
+  }
+});
+
+// Ticker Controls
+let tickerSpeed = 25; // seconds
+let tickerPaused = false;
+
+const tickerTrackEl = document.getElementById('ticker-track');
+const playPauseBtn = document.getElementById('ticker-play-pause');
+const speedSlowBtn = document.getElementById('ticker-speed-slow');
+const speedFastBtn = document.getElementById('ticker-speed-fast');
+
+function updateTickerAnimation() {
+  if (tickerTrackEl) {
+    if (tickerPaused) {
+      tickerTrackEl.style.animationPlayState = 'paused';
+    } else {
+      tickerTrackEl.style.animationPlayState = 'running';
+      tickerTrackEl.style.animationDuration = `${tickerSpeed}s`;
+    }
+  }
+}
+
+if (playPauseBtn) {
+  playPauseBtn.addEventListener('click', () => {
+    tickerPaused = !tickerPaused;
+
+    const playIcon = playPauseBtn.querySelector('.play-icon');
+    const pauseIcon = playPauseBtn.querySelector('.pause-icon');
+
+    if (tickerPaused) {
+      playIcon.classList.remove('hidden');
+      pauseIcon.classList.add('hidden');
+    } else {
+      playIcon.classList.add('hidden');
+      pauseIcon.classList.remove('hidden');
+    }
+
+    updateTickerAnimation();
+  });
+}
+
+if (speedSlowBtn) {
+  speedSlowBtn.addEventListener('click', () => {
+    tickerSpeed = Math.min(tickerSpeed + 5, 40); // Max 40s
+    updateTickerAnimation();
+  });
+}
+
+if (speedFastBtn) {
+  speedFastBtn.addEventListener('click', () => {
+    tickerSpeed = Math.max(tickerSpeed - 5, 10); // Min 10s
+    updateTickerAnimation();
+  });
 }

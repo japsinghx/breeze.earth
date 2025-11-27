@@ -1,0 +1,312 @@
+/* Metric Info Button & Modal Styles - Apple-inspired Design */
+.metric-item {
+    position: relative;
+}
+
+.metric-info-btn {
+    padding: 0.375rem;
+    background: transparent;
+    border: 1px solid var(--border-color);
+    border-radius: 50%;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+    margin-left: auto;
+}
+
+.metric-info-btn:hover {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: white;
+    transform: scale(1.15) rotate(90deg);
+}
+
+.metric-info-btn svg {
+    width: 14px;
+    height: 14px;
+}
+
+/* Modal Backdrop */
+.metric-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    z-index: 9998;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+body.dark-mode .metric-modal-backdrop {
+    background: rgba(0, 0, 0, 0.6);
+}
+
+.metric-modal-backdrop.active {
+    opacity: 1;
+    pointer-events: all;
+}
+
+/* Modal Container */
+.metric-modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.9);
+    background: var(--card-bg);
+    border-radius: 24px;
+    box-shadow:
+        0 20px 60px rgba(0, 0, 0, 0.3),
+        0 0 1px rgba(0, 0, 0, 0.05);
+    max-width: 480px;
+    width: calc(100% - 2rem);
+    max-height: 80vh;
+    overflow: hidden;
+    z-index: 9999;
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.5s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+body.dark-mode .metric-modal {
+    background: rgba(28, 28, 30, 0.95);
+    backdrop-filter: blur(40px);
+    -webkit-backdrop-filter: blur(40px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.metric-modal.active {
+    opacity: 1;
+    pointer-events: all;
+    transform: translate(-50%, -50%) scale(1);
+}
+
+/* Modal Header */
+.metric-modal-header {
+    padding: 1.5rem 1.5rem 0 1.5rem;
+    position: relative;
+}
+
+.metric-modal-close {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: rgba(120, 120, 128, 0.16);
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    padding: 0;
+}
+
+.metric-modal-close:hover {
+    background: rgba(120, 120, 128, 0.24);
+    transform: scale(1.1);
+}
+
+body.dark-mode .metric-modal-close {
+    background: rgba(120, 120, 128, 0.24);
+}
+
+body.dark-mode .metric-modal-close:hover {
+    background: rgba(120, 120, 128, 0.36);
+}
+
+.metric-modal-close svg {
+    width: 16px;
+    height: 16px;
+}
+
+.metric-modal-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--text-color);
+    margin: 0 0 0.5rem 0;
+    letter-spacing: -0.02em;
+    padding-right: 2rem;
+}
+
+.metric-modal-subtitle {
+    font-size: 0.9375rem;
+    line-height: 1.6;
+    color: var(--text-muted);
+    margin: 0;
+    padding-right: 2rem;
+}
+
+/* Modal Content */
+.metric-modal-content {
+    padding: 1.5rem;
+    overflow-y: auto;
+    max-height: calc(80vh - 6rem);
+}
+
+.metric-modal-section {
+    margin-bottom: 1.5rem;
+}
+
+.metric-modal-section:last-child {
+    margin-bottom: 0;
+}
+
+.metric-modal-section-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-color);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin: 0 0 0.75rem 0;
+    opacity: 0.8;
+}
+
+/* Metric Ranges */
+.metric-ranges {
+    display: flex;
+    flex-direction: column;
+    gap: 0.625rem;
+}
+
+.range-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.875rem 1rem;
+    border-radius: 12px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.range-item::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.range-item.range-good {
+    background: rgba(52, 199, 89, 0.12);
+    color: var(--aqi-good);
+}
+
+.range-item.range-good::before {
+    background: var(--aqi-good);
+}
+
+.range-item.range-moderate {
+    background: rgba(255, 149, 0, 0.12);
+    color: var(--aqi-moderate);
+}
+
+.range-item.range-moderate::before {
+    background: var(--aqi-moderate);
+}
+
+.range-item.range-poor {
+    background: rgba(255, 59, 48, 0.12);
+    color: var(--aqi-unhealthy);
+}
+
+.range-item.range-poor::before {
+    background: var(--aqi-unhealthy);
+}
+
+.range-item.current {
+    transform: scale(1.02);
+    box-shadow:
+        0 4px 12px rgba(0, 0, 0, 0.12),
+        0 0 0 2px var(--card-bg);
+    font-weight: 600;
+}
+
+.range-item.current::before {
+    width: 100%;
+    opacity: 0.08;
+}
+
+/* Current Status Badge */
+.current-status-badge {
+    background: var(--bg-color);
+    padding: 1rem 1.25rem;
+    border-radius: 14px;
+    border: 1px solid var(--border-color);
+}
+
+.current-status-label {
+    font-size: 0.8125rem;
+    color: var(--text-muted);
+    font-weight: 500;
+    margin: 0 0 0.375rem 0;
+}
+
+.current-status-value {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--text-color);
+    margin: 0;
+}
+
+.current-status-value strong {
+    color: var(--primary);
+}
+
+/* Smooth scrollbar */
+.metric-modal-content::-webkit-scrollbar {
+    width: 8px;
+}
+
+.metric-modal-content::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.metric-modal-content::-webkit-scrollbar-thumb {
+    background: rgba(120, 120, 128, 0.2);
+    border-radius: 10px;
+}
+
+.metric-modal-content::-webkit-scrollbar-thumb:hover {
+    background: rgba(120, 120, 128, 0.3);
+}
+
+/* Animation entrance */
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -45%) scale(0.95);
+    }
+
+    to {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .metric-modal {
+        max-width: calc(100% - 2rem);
+        max-height: 85vh;
+    }
+
+    .metric-modal-title {
+        font-size: 1.25rem;
+    }
+}
