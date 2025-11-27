@@ -25,6 +25,9 @@ const coVal = document.getElementById('co-val');
 
 const healthTipsList = document.getElementById('health-tips');
 
+// Store current metric values for modal display
+let currentMetricValues = {};
+
 // Top 10 most populated cities with coordinates
 const topCities = [
   { name: 'Tokyo', country: 'Japan', lat: 35.6762, lon: 139.6503 },
@@ -108,11 +111,13 @@ async function initializeTicker() {
 initializeTicker();
 
 let debounceTimer;
+let selectedSuggestionIndex = -1;
 
 // Event Listeners
 locationInput.addEventListener('input', (e) => {
   clearTimeout(debounceTimer);
   const query = e.target.value.trim();
+  selectedSuggestionIndex = -1; // Reset selection on new input
 
   if (query.length < 2) {
     suggestionsList.classList.add('hidden');
@@ -124,10 +129,49 @@ locationInput.addEventListener('input', (e) => {
   }, 300);
 });
 
+// Keyboard navigation for suggestions
+locationInput.addEventListener('keydown', (e) => {
+  const suggestions = suggestionsList.querySelectorAll('.suggestion-item');
+
+  if (suggestions.length === 0 || suggestionsList.classList.contains('hidden')) {
+    return;
+  }
+
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    selectedSuggestionIndex = Math.min(selectedSuggestionIndex + 1, suggestions.length - 1);
+    updateSuggestionSelection(suggestions);
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    selectedSuggestionIndex = Math.max(selectedSuggestionIndex - 1, -1);
+    updateSuggestionSelection(suggestions);
+  } else if (e.key === 'Enter') {
+    e.preventDefault();
+    if (selectedSuggestionIndex >= 0 && selectedSuggestionIndex < suggestions.length) {
+      suggestions[selectedSuggestionIndex].click();
+    }
+  } else if (e.key === 'Escape') {
+    suggestionsList.classList.add('hidden');
+    selectedSuggestionIndex = -1;
+  }
+});
+
+function updateSuggestionSelection(suggestions) {
+  suggestions.forEach((item, index) => {
+    if (index === selectedSuggestionIndex) {
+      item.classList.add('keyboard-selected');
+      item.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    } else {
+      item.classList.remove('keyboard-selected');
+    }
+  });
+}
+
 // Hide suggestions when clicking outside
 document.addEventListener('click', (e) => {
   if (!locationInput.contains(e.target) && !suggestionsList.contains(e.target)) {
     suggestionsList.classList.add('hidden');
+    selectedSuggestionIndex = -1;
   }
 });
 
@@ -277,12 +321,60 @@ async function fetchAirQuality(lat, lon, locationName) {
       return;
     }
 
+    // Update URL with location data for deep linking
+    updateURL(locationName, lat, lon);
+
     updateUI(data.current, locationName);
   } catch (err) {
     showError('Failed to fetch air quality data.');
     console.error(err);
   }
 }
+
+// Update URL with location parameters
+function updateURL(locationName, lat, lon) {
+  const params = new URLSearchParams();
+  params.set('city', locationName);
+  params.set('lat', lat.toFixed(4));
+  params.set('lon', lon.toFixed(4));
+
+  const newURL = `${window.location.pathname}?${params.toString()}`;
+  window.history.pushState({ locationName, lat, lon }, '', newURL);
+}
+
+// Load location from URL on page load
+function loadFromURL() {
+  const params = new URLSearchParams(window.location.search);
+  const city = params.get('city');
+  const lat = params.get('lat');
+  const lon = params.get('lon');
+
+  if (city && lat && lon) {
+    // Auto-load the location from URL
+    fetchAirQuality(parseFloat(lat), parseFloat(lon), city);
+    // Update the input field
+    if (locationInput) {
+      locationInput.value = city;
+    }
+  }
+}
+
+// Call loadFromURL when page loads
+window.addEventListener('DOMContentLoaded', loadFromURL);
+
+// Handle browser back/forward buttons
+window.addEventListener('popstate', (event) => {
+  if (event.state && event.state.locationName) {
+    // Restore from history state
+    fetchAirQuality(event.state.lat, event.state.lon, event.state.locationName);
+    if (locationInput) {
+      locationInput.value = event.state.locationName;
+    }
+  } else {
+    // No state, reload from URL or go back to landing
+    loadFromURL();
+  }
+});
 
 const appDiv = document.getElementById('app');
 
@@ -347,53 +439,25 @@ function updateUI(data, locationName) {
 function updatePollutant(id, value, goodLimit, moderateLimit) {
   const valEl = document.getElementById(`${id}-val`);
   const cardEl = document.getElementById(`${id}-card`);
-  const currentRangeEl = document.getElementById(`${id}-current`);
-  const infoPanelEl = document.getElementById(`${id}-info`);
 
   if (!valEl || !cardEl) return;
 
   const roundedValue = Math.round(value);
   valEl.textContent = roundedValue;
 
+  // Store value for modal display
+  currentMetricValues[id] = roundedValue;
+
   // Remove existing status classes
   cardEl.classList.remove('status-good', 'status-moderate', 'status-poor');
 
   // Determine status
-  let statusClass = '';
-  let statusText = '';
-
   if (value <= goodLimit) {
     cardEl.classList.add('status-good');
-    statusClass = 'good';
-    statusText = 'Good';
   } else if (value <= moderateLimit) {
     cardEl.classList.add('status-moderate');
-    statusClass = 'moderate';
-    statusText = 'Moderate';
   } else {
     cardEl.classList.add('status-poor');
-    statusClass = 'poor';
-    statusText = 'Unhealthy';
-  }
-
-  // Update current range display in info panel
-  if (currentRangeEl) {
-    currentRangeEl.innerHTML = `Your level: <strong>${roundedValue} µg/m³ (${statusText})</strong>`;
-  }
-
-  // Highlight the current range in the info panel
-  if (infoPanelEl) {
-    const rangeItems = infoPanelEl.querySelectorAll('.range-item');
-    rangeItems.forEach((item, index) => {
-      item.classList.remove('current');
-      if (
-        (index === 0 && statusClass === 'good') ||
-        (index === 1 && statusClass === 'moderate') ||
-        (index === 2 && statusClass === 'poor')
-      ) {
-        item.classList.add('current');
-      }
-    });
   }
 }
 
@@ -491,45 +555,146 @@ function hideLoading() {
   loadingDiv.classList.add('hidden');
 }
 
-// Metric Info Panel Toggle
-document.addEventListener('click', (e) => {
-  const infoBtn = e.target.closest('.metric-info-btn');
+// Metric Info Modal
+const metricModal = document.getElementById('metric-modal');
+const metricModalBackdrop = document.getElementById('metric-modal-backdrop');
+const metricModalClose = document.getElementById('metric-modal-close');
+const metricModalTitle = document.getElementById('metric-modal-title');
+const metricModalSubtitle = document.getElementById('metric-modal-subtitle');
+const metricModalCurrent = document.getElementById('metric-modal-current');
+const metricModalRanges = document.getElementById('metric-modal-ranges');
 
-  if (infoBtn) {
-    e.stopPropagation();
-    const metric = infoBtn.dataset.metric;
-    const panel = document.getElementById(`${metric}-info`);
+// Metric information data
+const metricInfo = {
+  pm25: {
+    title: 'Fine Particulate Matter (PM2.5)',
+    description: 'Tiny particles ≤2.5 micrometers that can penetrate deep into lungs and bloodstream.',
+    ranges: [
+      { label: 'Good', range: '0-12 µg/m³', class: 'range-good', min: 0, max: 12 },
+      { label: 'Moderate', range: '12.1-35.4 µg/m³', class: 'range-moderate', min: 12.1, max: 35.4 },
+      { label: 'Unhealthy', range: '>35.4 µg/m³', class: 'range-poor', min: 35.4, max: Infinity }
+    ]
+  },
+  pm10: {
+    title: 'Coarse Particulate Matter (PM10)',
+    description: 'Inhalable particles ≤10 micrometers from dust, pollen, and mold. Affects respiratory system.',
+    ranges: [
+      { label: 'Good', range: '0-54 µg/m³', class: 'range-good', min: 0, max: 54 },
+      { label: 'Moderate', range: '55-154 µg/m³', class: 'range-moderate', min: 55, max: 154 },
+      { label: 'Unhealthy', range: '>154 µg/m³', class: 'range-poor', min: 154, max: Infinity }
+    ]
+  },
+  no2: {
+    title: 'Nitrogen Dioxide (NO₂)',
+    description: 'Reddish-brown gas from vehicle emissions and power plants. Irritates airways and reduces immunity.',
+    ranges: [
+      { label: 'Good', range: '0-53 µg/m³', class: 'range-good', min: 0, max: 53 },
+      { label: 'Moderate', range: '54-100 µg/m³', class: 'range-moderate', min: 54, max: 100 },
+      { label: 'Unhealthy', range: '>100 µg/m³', class: 'range-poor', min: 100, max: Infinity }
+    ]
+  },
+  so2: {
+    title: 'Sulfur Dioxide (SO₂)',
+    description: 'Colorless gas from fossil fuel combustion. Can trigger asthma and respiratory issues.',
+    ranges: [
+      { label: 'Good', range: '0-35 µg/m³', class: 'range-good', min: 0, max: 35 },
+      { label: 'Moderate', range: '36-75 µg/m³', class: 'range-moderate', min: 36, max: 75 },
+      { label: 'Unhealthy', range: '>75 µg/m³', class: 'range-poor', min: 75, max: Infinity }
+    ]
+  },
+  o3: {
+    title: 'Ground-Level Ozone (O₃)',
+    description: 'Formed by sunlight reacting with pollutants. Harmful to lungs, especially during outdoor activities.',
+    ranges: [
+      { label: 'Good', range: '0-54 µg/m³', class: 'range-good', min: 0, max: 54 },
+      { label: 'Moderate', range: '55-70 µg/m³', class: 'range-moderate', min: 55, max: 70 },
+      { label: 'Unhealthy', range: '>70 µg/m³', class: 'range-poor', min: 70, max: Infinity }
+    ]
+  },
+  co: {
+    title: 'Carbon Monoxide (CO)',
+    description: 'Odorless, colorless gas from incomplete combustion. Reduces oxygen delivery to body tissues.',
+    ranges: [
+      { label: 'Good', range: '0-4,400 µg/m³', class: 'range-good', min: 0, max: 4400 },
+      { label: 'Moderate', range: '4,401-9,400 µg/m³', class: 'range-moderate', min: 4401, max: 9400 },
+      { label: 'Unhealthy', range: '>9,400 µg/m³', class: 'range-poor', min: 9400, max: Infinity }
+    ]
+  }
+};
 
-    if (panel) {
-      // Close all other panels
-      document.querySelectorAll('.metric-info-panel').forEach(p => {
-        if (p !== panel) {
-          p.classList.remove('active');
-        }
-      });
+function openMetricModal(metricId) {
+  const info = metricInfo[metricId];
+  if (!info) return;
 
-      // Toggle current panel
-      panel.classList.toggle('active');
+  // Set modal content
+  metricModalTitle.textContent = info.title;
+  metricModalSubtitle.textContent = info.description;
 
-      // Rotate button
-      if (panel.classList.contains('active')) {
-        infoBtn.style.transform = 'rotate(180deg)';
-      } else {
-        infoBtn.style.transform = 'rotate(0deg)';
+  // Get current value
+  const currentValue = currentMetricValues[metricId] || '--';
+
+  // Determine current status
+  let statusText = 'Unknown';
+  if (currentValue !== '--') {
+    const value = parseFloat(currentValue);
+    for (const range of info.ranges) {
+      if (value >= range.min && value <= range.max) {
+        statusText = range.label;
+        break;
       }
     }
   }
+
+  // Set current level display
+  if (currentValue !== '--') {
+    metricModalCurrent.innerHTML = `<strong>${currentValue} µg/m³</strong> (${statusText})`;
+  } else {
+    metricModalCurrent.innerHTML = '<strong>--</strong>';
+  }
+
+  // Populate ranges
+  metricModalRanges.innerHTML = info.ranges.map(range => {
+    const isCurrent = currentValue !== '--' &&
+      parseFloat(currentValue) >= range.min &&
+      parseFloat(currentValue) <= range.max;
+    return `
+      <div class="range-item ${range.class} ${isCurrent ? 'current' : ''}">
+        <span>${range.label}</span>
+        <span>${range.range}</span>
+      </div>
+    `;
+  }).join('');
+
+  // Show modal
+  metricModal.classList.add('active');
+  metricModalBackdrop.classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeMetricModal() {
+  metricModal.classList.remove('active');
+  metricModalBackdrop.classList.remove('active');
+  document.body.style.overflow = '';
+}
+
+// Click handler for info buttons
+document.addEventListener('click', (e) => {
+  const infoBtn = e.target.closest('.metric-info-btn');
+  if (infoBtn) {
+    e.stopPropagation();
+    const metric = infoBtn.dataset.metric;
+    openMetricModal(metric);
+  }
 });
 
-// Close info panels when clicking outside
-document.addEventListener('click', (e) => {
-  if (!e.target.closest('.metric-item')) {
-    document.querySelectorAll('.metric-info-panel').forEach(panel => {
-      panel.classList.remove('active');
-    });
-    document.querySelectorAll('.metric-info-btn').forEach(btn => {
-      btn.style.transform = 'rotate(0deg)';
-    });
+// Close modal handlers
+metricModalClose.addEventListener('click', closeMetricModal);
+metricModalBackdrop.addEventListener('click', closeMetricModal);
+
+// Close on Escape key
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && metricModal.classList.contains('active')) {
+    closeMetricModal();
   }
 });
 
