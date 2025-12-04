@@ -44,6 +44,11 @@
     margin-left: 0.25rem;
 }
 
+/* Pollen API Link */
+.pollen-api-link:hover .link-text {
+    text-decoration: underline;
+}
+
 /* Modal Backdrop */
 .metric-modal-backdrop {
     position: fixed;
