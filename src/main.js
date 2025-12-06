@@ -562,7 +562,7 @@ function getAQIStatus(aqi) {
     };
   } else if (aqi <= 100) {
     return {
-      text: 'Moderate High 😕',
+      text: 'Moderately High 😕',
       description: 'Getting a bit iffy for sensitive groups.',
       color: 'var(--aqi-moderate)',
       tips: ['If you have asthma, keep that inhaler handy! 💨', 'Light outdoor activities are okay 👍', 'Stay hydrated! 💧']
